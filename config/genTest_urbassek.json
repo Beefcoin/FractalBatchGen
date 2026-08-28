@@ -1,0 +1,41 @@
+{
+    "output_directory": "generated/test_urbassek",
+    "liggghts": {
+        "enabled": true,
+        "density": 2.0
+    },
+    "algorithms": {
+        "Urbassek": {
+            "enabled": true,
+            "script": "urbassek3d.py",
+            "generates": [
+                {
+                    "N_target": [
+                        10,
+                        25
+                    ],
+                    "r_sigma_mult": 6.0,
+                    "particle_radius": 0.485,
+                    "random_seed": [
+                        1029,
+                        1030
+                    ],
+                    "max_try": 2000
+                },
+                {
+                    "N_target": [
+                        10,
+                        25
+                    ],
+                    "r_sigma_mult": 10.0,
+                    "particle_radius": 0.485,
+                    "random_seed": [
+                        1029,
+                        1030
+                    ],
+                    "max_try": 2000
+                }
+            ]
+        }
+    }
+}

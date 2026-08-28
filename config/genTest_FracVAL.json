@@ -1,0 +1,31 @@
+{
+    "output_directory": "generated/test_fracval",
+    "liggghts": {
+        "enabled": true,
+        "density": 2.0
+    },
+    "algorithms": {
+        "FracVAL": {
+            "enabled": true,
+            "script": "FracVAL.py",
+            "parameters": {
+                "Np": [
+                    10,
+                    50
+                ],
+                "Df": [
+                    1.8,
+                    2.4
+                ],
+                "kf": 1.1,
+                "Dp_geo": 0.97,
+                "Dp_gsd": 1.0,
+                "tol_ov": 1e-06,
+                "random_seed": [
+                    1029,
+                    1030
+                ]
+            }
+        }
+    }
+}

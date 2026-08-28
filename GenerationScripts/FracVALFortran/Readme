@@ -1,0 +1,9 @@
+Build with: 
+
+python -m numpy.f2py -c \
+  Ctes.f90 random.f90 RAND_SAMPLE.f90 a_Random_PP.f90 \
+  PCA_cca.f90 PCA_Subclusters_module.f90 Save_results_CC.f90 \
+  CCA_module.f90 fracval_wrapper.f90 \
+  -m fracval \
+  only: run_fracval init_ctes :
+

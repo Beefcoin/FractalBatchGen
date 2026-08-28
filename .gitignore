@@ -1,0 +1,26 @@
+# Generated agglomerates
+generated/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Compiled FracVAL / F2PY
+*.so
+*.o
+*.mod
+
+# F2PY / Meson build files
+build/
+.mesonpy-*/
+meson-logs/
+meson-private/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
