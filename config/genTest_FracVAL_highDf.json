@@ -1,0 +1,60 @@
+{
+    "output_directory": "generated/test_fracval_highDf",
+    "liggghts": {
+        "enabled": true,
+        "density": 2.0
+    },
+    "algorithms": {
+        "FracVAL": {
+            "enabled": true,
+            "script": "FracVAL.py",
+            "generates": [
+                 {
+                    "Np": [
+                        10,
+                        50,
+                        100
+                    ],
+                    "Df": 2.4,
+                    "kf": 1.1,
+                    "Dp_geo": 0.97,
+                    "Dp_gsd": 1.0,
+                    "tol_ov": 1e-06,
+                    "random_seed": [
+                        420
+                    ]
+                },
+                {
+                    "Np": [
+                        10,
+                        50,
+                        100
+                    ],
+                    "Df": 2.7,
+                    "kf": 1.0,
+                    "Dp_geo": 0.97,
+                    "Dp_gsd": 1.0,
+                    "tol_ov": 1e-06,
+                    "random_seed": [
+                        420
+                    ]
+                },
+                {
+                    "Np": [
+                        10,
+                        50,
+                        100
+                    ],
+                    "Df": 3.0,
+                    "kf": 0.6,
+                    "Dp_geo": 0.97,
+                    "Dp_gsd": 1.0,
+                    "tol_ov": 1e-06,
+                    "random_seed": [
+                        420
+                    ]
+                }
+            ]
+        }
+    }
+}
