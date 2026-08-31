@@ -63,7 +63,7 @@ debug_config()
 
 #call my epic wrapper here
 print("\nGenerating CCA Aggregate using Fortran FracVAL, depending on N this might take a while...\n")
-coords, radii, failed = fracval.fracval_wrapper.run_fracval(
+coords, diam, failed = fracval.fracval_wrapper.run_fracval(
     Np,
     Df, 
     kf, 
@@ -78,4 +78,5 @@ if failed:
 
 #save CSV
 fileNameCSV = output_file
+radii = diam / 2
 writeCSV(coords,radii,fileNameCSV)    
