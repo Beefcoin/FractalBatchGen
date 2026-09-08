@@ -151,33 +151,37 @@ def run_command(command):
         text=True
     )
 
-    if result.returncode != 0:
+    # Successful execution
+    if result.returncode == 0:
+        return result
+
+    # Expected generation failure:
+    # the requested parameter combination could not be generated.
+    if result.returncode == 69:
+        return result
+
+    # Unexpected error:
+    # show full subprocess output for debugging.
+    print()
+    print("ERROR:")
+    print(
+        " ".join(
+            map(str, command)
+        )
+    )
+
+    if result.stdout.strip():
         print()
-        print("ERROR:")
-        print(
-            " ".join(
-                map(str, command)
-            )
-        )
+        print(result.stdout)
 
-        if result.stdout.strip():
-            print()
-            print(
-                result.stdout
-            )
+    if result.stderr.strip():
+        print()
+        print(result.stderr)
 
-        if result.stderr.strip():
-            print()
-            print(
-                result.stderr
-            )
-
-        raise subprocess.CalledProcessError(
-            result.returncode,
-            command
-        )
-
-    return result
+    raise subprocess.CalledProcessError(
+        result.returncode,
+        command
+    )
 
 
 def build_display_params(combination):
@@ -574,9 +578,18 @@ def generate_algorithm(
             str(csv_file)
         ])
 
-        run_command(
+        generation_result = run_command(
             command
         )
+
+        if generation_result.returncode == 69:
+            print(
+                "      -> Generation failed"
+            )
+            print(
+                "         Check generation parameters."
+            )
+            continue
 
         print(
             "      -> CSV written"

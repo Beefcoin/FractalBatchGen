@@ -181,6 +181,7 @@ while len(particles) < N_target:
 
     if not attached:
         raise  Exception("Could not attach particle @ N = ", len(particles), " Check Generation Settings!")
+        sys.exit(69)
 
 
 

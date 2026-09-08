@@ -74,7 +74,8 @@ coords, diam, failed = fracval.fracval_wrapper.run_fracval(
 )
 
 if failed:
-    raise Exception("Generation failed... Check Generation Parameters!")
+    print("Generation failed... Check generation parameters.")
+    sys.exit(69)
 
 #save CSV
 fileNameCSV = output_file

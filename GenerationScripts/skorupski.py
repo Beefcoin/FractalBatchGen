@@ -320,7 +320,8 @@ while len(particles) < N_target:
             print("Particle added (", len(particles), "/", N_target, ")")
 
        if tr > max_try:
-           raise Exception("Exeedet maximum number of trys for adding particle. Check generation Parameters!!")
+           print("Generation failed... Check generation parameters.")
+           sys.exit(69)
            
 
 if plot_scaling:
