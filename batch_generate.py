@@ -514,7 +514,9 @@ def generate_algorithm(
     )
     print("=" * 70)
 
+    #counters for failures / generates
     generated = 0
+    failed = 0
 
     for run_number, run in enumerate(
         runs,
@@ -589,6 +591,7 @@ def generate_algorithm(
             print(
                 "         Check generation parameters."
             )
+            failed += 1
             continue
 
         print(
@@ -641,7 +644,7 @@ def generate_algorithm(
 
         generated += 1
 
-    return generated
+    return generated, failed
 
 
 # =============================================================
@@ -824,23 +827,25 @@ def main():
     # ---------------------------------------------------------
 
     total_generated = 0
+    total_failed = 0
 
     for (
         algorithm_name,
         algorithm_config
     ) in algorithms.items():
 
-        total_generated += (
-            generate_algorithm(
-                algorithm_name,
-                algorithm_config,
-                output_root,
-                liggghts_enabled,
-                density,
-                analysis_enabled,
-                analysis_csv
-            )
+        generated, failed = generate_algorithm(
+            algorithm_name,
+            algorithm_config,
+            output_root,
+            liggghts_enabled,
+            density,
+            analysis_enabled,
+            analysis_csv
         )
+
+        total_generated += generated
+        total_failed += failed
 
     # ---------------------------------------------------------
     # Finished
@@ -852,6 +857,9 @@ def main():
     print("=" * 70)
     print(
         f"Generated : {total_generated}"
+    )
+    print(
+        f"Failed    : {total_failed}"
     )
     print(
         f"Output    : {display_output}"
