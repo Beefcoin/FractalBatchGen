@@ -4,6 +4,9 @@
         "enabled": true,
         "density": 2.0
     },
+    "analysis": {
+        "enabled": true
+    },
     "algorithms": {
         "Skorupski": {
             "enabled": true,

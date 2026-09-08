@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import csv
 import itertools
 import json
 import subprocess
@@ -12,11 +13,13 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 GENERATION_DIR = BASE_DIR / "GenerationScripts"
 LIGGGHTS_WRITER = BASE_DIR / "liggghtsWriter.py"
+ANALYSIS_SCRIPT = BASE_DIR / "agglomerate_analysis" / "main.py"
 
 
 def as_list(value):
     if isinstance(value, list):
         return value
+
     return [value]
 
 
@@ -30,10 +33,15 @@ def sanitize(value):
 
 def build_parameter_combinations(parameters):
     keys = list(parameters.keys())
-    values = [as_list(parameters[key]) for key in keys]
+    values = [
+        as_list(parameters[key])
+        for key in keys
+    ]
 
     for combination in itertools.product(*values):
-        yield dict(zip(keys, combination))
+        yield dict(
+            zip(keys, combination)
+        )
 
 
 def build_algorithm_runs(algorithm_config):
@@ -49,7 +57,9 @@ def build_algorithm_runs(algorithm_config):
     Each generate block creates its own Cartesian product.
     """
     if "generates" in algorithm_config:
-        generate_groups = algorithm_config["generates"]
+        generate_groups = algorithm_config[
+            "generates"
+        ]
 
     elif "parameters" in algorithm_config:
         # Backwards compatibility with older configs
@@ -69,7 +79,9 @@ def build_algorithm_runs(algorithm_config):
         generate_groups,
         start=1
     ):
-        for combination in build_parameter_combinations(parameters):
+        for combination in build_parameter_combinations(
+            parameters
+        ):
             runs.append({
                 "group": group_number,
                 "parameters": combination
@@ -78,7 +90,10 @@ def build_algorithm_runs(algorithm_config):
     return runs
 
 
-def build_output_name(algorithm_name, parameters):
+def build_output_name(
+    algorithm_name,
+    parameters
+):
     ignored_parameters = {
         "max_try",
         "plot-scaling",
@@ -90,13 +105,19 @@ def build_output_name(algorithm_name, parameters):
         "random_seed": "seed"
     }
 
-    parts = [algorithm_name]
+    parts = [
+        algorithm_name
+    ]
 
     for key, value in parameters.items():
         if key in ignored_parameters:
             continue
 
-        key_name = aliases.get(key, key)
+        key_name = aliases.get(
+            key,
+            key
+        )
+
         parts.append(
             f"{key_name}_{sanitize(value)}"
         )
@@ -104,10 +125,17 @@ def build_output_name(algorithm_name, parameters):
     return "_".join(parts)
 
 
-def parameter_to_cli(command, key, value):
+def parameter_to_cli(
+    command,
+    key,
+    value
+):
     if isinstance(value, bool):
         if value:
-            command.append(f"--{key}")
+            command.append(
+                f"--{key}"
+            )
+
     else:
         command.extend([
             f"--{key}",
@@ -126,69 +154,337 @@ def run_command(command):
     if result.returncode != 0:
         print()
         print("ERROR:")
-        print(" ".join(map(str, command)))
+        print(
+            " ".join(
+                map(str, command)
+            )
+        )
 
         if result.stdout.strip():
             print()
-            print(result.stdout)
+            print(
+                result.stdout
+            )
 
         if result.stderr.strip():
             print()
-            print(result.stderr)
+            print(
+                result.stderr
+            )
 
         raise subprocess.CalledProcessError(
             result.returncode,
             command
         )
 
+    return result
+
 
 def build_display_params(combination):
     display = []
 
     for key, value in combination.items():
-        if key in ("N_target", "Np"):
-            display.append(f"N={value}")
+        if key in (
+            "N_target",
+            "Np"
+        ):
+            display.append(
+                f"N={value}"
+            )
 
         elif key == "Df":
-            display.append(f"Df={value}")
+            display.append(
+                f"Df={value}"
+            )
 
         elif key == "kf":
-            display.append(f"kf={value}")
+            display.append(
+                f"kf={value}"
+            )
 
         elif key == "r_sigma_mult":
-            display.append(f"r_sigma={value}")
+            display.append(
+                f"r_sigma={value}"
+            )
 
         elif key == "random_seed":
-            display.append(f"seed={value}")
+            display.append(
+                f"seed={value}"
+            )
 
     return "  ".join(display)
 
+
+# =============================================================
+# Analysis
+# =============================================================
+
+def normalize_metadata(
+    algorithm_name,
+    parameters
+):
+    """
+    Normalize parameter names used by different generation
+    algorithms so that they can be stored in one common
+    analysis table.
+    """
+    aliases = {
+        "N_target": "N",
+        "Np": "N",
+        "random_seed": "seed"
+    }
+
+    metadata = {
+        "algorithm": algorithm_name
+    }
+
+    for key, value in parameters.items():
+        normalized_key = aliases.get(
+            key,
+            key
+        )
+
+        metadata[
+            normalized_key
+        ] = value
+
+    return metadata
+
+
+def read_analysis_result(result):
+    """
+    Read the JSON result returned by
+    agglomerate_analysis/main.py.
+    """
+    stdout = result.stdout.strip()
+
+    if not stdout:
+        raise ValueError(
+            "Analysis returned no output"
+        )
+
+    try:
+        return json.loads(
+            stdout
+        )
+
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            "Could not parse analysis output as JSON:\n"
+            f"{stdout}"
+        ) from exc
+
+
+def load_existing_analysis_rows(
+    csv_file
+):
+    """
+    Load an existing analysis CSV.
+
+    This is required because different generation algorithms
+    may contain different input parameters. If a new column
+    appears, the existing table is rewritten with the extended
+    header.
+    """
+    if not csv_file.exists():
+        return [], []
+
+    with open(
+        csv_file,
+        "r",
+        newline=""
+    ) as f:
+        reader = csv.DictReader(
+            f
+        )
+
+        fieldnames = (
+            reader.fieldnames
+            if reader.fieldnames
+            else []
+        )
+
+        rows = list(
+            reader
+        )
+
+    return fieldnames, rows
+
+
+def append_analysis_result(
+    analysis_csv,
+    metadata,
+    results,
+    input_file
+):
+    """
+    Add one generated agglomerate and its analysis results
+    to the common analysis table.
+    """
+    row = {}
+
+    # Generation parameters
+    row.update(
+        metadata
+    )
+
+    # Morphological analysis results
+    row.update(
+        results
+    )
+
+    # Original generated CSV for traceability
+    row["input_file"] = (
+        input_file.name
+    )
+
+    existing_fields, existing_rows = (
+        load_existing_analysis_rows(
+            analysis_csv
+        )
+    )
+
+    fieldnames = list(
+        existing_fields
+    )
+
+    # Add newly appearing parameters or analysis properties
+    # to the CSV header automatically.
+    for key in row.keys():
+        if key not in fieldnames:
+            fieldnames.append(
+                key
+            )
+
+    existing_rows.append(
+        row
+    )
+
+    analysis_csv.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    with open(
+        analysis_csv,
+        "w",
+        newline=""
+    ) as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames
+        )
+
+        writer.writeheader()
+
+        for existing_row in existing_rows:
+            writer.writerow(
+                existing_row
+            )
+
+
+def run_analysis(
+    csv_file,
+    analysis_csv,
+    algorithm_name,
+    parameters
+):
+    """
+    Run the standalone agglomerate analysis program and
+    store its results together with the generation parameters.
+    """
+    if not ANALYSIS_SCRIPT.exists():
+        raise FileNotFoundError(
+            f"Analysis script does not exist: "
+            f"{ANALYSIS_SCRIPT}"
+        )
+
+    command = [
+        sys.executable,
+        str(ANALYSIS_SCRIPT),
+        str(csv_file)
+    ]
+
+    result = run_command(
+        command
+    )
+
+    analysis_results = (
+        read_analysis_result(
+            result
+        )
+    )
+
+    metadata = (
+        normalize_metadata(
+            algorithm_name,
+            parameters
+        )
+    )
+
+    append_analysis_result(
+        analysis_csv,
+        metadata,
+        analysis_results,
+        csv_file
+    )
+
+
+# =============================================================
+# Generation
+# =============================================================
 
 def generate_algorithm(
     algorithm_name,
     algorithm_config,
     output_root,
     liggghts_enabled,
-    density
+    density,
+    analysis_enabled,
+    analysis_csv
 ):
-    if not algorithm_config.get("enabled", False):
+    if not algorithm_config.get(
+        "enabled",
+        False
+    ):
         return 0
 
-    script_name = algorithm_config["script"]
-    script = GENERATION_DIR / script_name
+    script_name = algorithm_config[
+        "script"
+    ]
+
+    script = (
+        GENERATION_DIR
+        / script_name
+    )
 
     if not script.exists():
         raise FileNotFoundError(
             f"Generation script does not exist: {script}"
         )
 
-    algorithm_output_dir = output_root / algorithm_name
+    # ---------------------------------------------------------
+    # Algorithm output directory
+    # ---------------------------------------------------------
+
+    algorithm_output_dir = (
+        output_root
+        / algorithm_name
+    )
+
     algorithm_output_dir.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    sys_output_dir = algorithm_output_dir / "sys"
+    # ---------------------------------------------------------
+    # SYS output directory
+    # ---------------------------------------------------------
+
+    sys_output_dir = (
+        algorithm_output_dir
+        / "sys"
+    )
 
     if liggghts_enabled:
         sys_output_dir.mkdir(
@@ -196,12 +492,22 @@ def generate_algorithm(
             exist_ok=True
         )
 
-    runs = build_algorithm_runs(algorithm_config)
+    # ---------------------------------------------------------
+    # Build generation runs
+    # ---------------------------------------------------------
+
+    runs = build_algorithm_runs(
+        algorithm_config
+    )
 
     print()
     print("=" * 70)
-    print(f"Algorithm : {algorithm_name}")
-    print(f"Runs      : {len(runs)}")
+    print(
+        f"Algorithm : {algorithm_name}"
+    )
+    print(
+        f"Runs      : {len(runs)}"
+    )
     print("=" * 70)
 
     generated = 0
@@ -210,12 +516,19 @@ def generate_algorithm(
         runs,
         start=1
     ):
-        group_number = run["group"]
-        combination = run["parameters"]
+        group_number = run[
+            "group"
+        ]
 
-        output_name = build_output_name(
-            algorithm_name,
-            combination
+        combination = run[
+            "parameters"
+        ]
+
+        output_name = (
+            build_output_name(
+                algorithm_name,
+                combination
+            )
         )
 
         csv_file = (
@@ -223,8 +536,10 @@ def generate_algorithm(
             / f"{output_name}.csv"
         )
 
-        display_params = build_display_params(
-            combination
+        display_params = (
+            build_display_params(
+                combination
+            )
         )
 
         print(
@@ -237,6 +552,10 @@ def generate_algorithm(
                 else ""
             )
         )
+
+        # -----------------------------------------------------
+        # Generate agglomerate
+        # -----------------------------------------------------
 
         command = [
             sys.executable,
@@ -255,8 +574,17 @@ def generate_algorithm(
             str(csv_file)
         ])
 
-        run_command(command)
-        print("      -> CSV written")
+        run_command(
+            command
+        )
+
+        print(
+            "      -> CSV written"
+        )
+
+        # -----------------------------------------------------
+        # Generate LIGGGHTS SYS
+        # -----------------------------------------------------
 
         if liggghts_enabled:
             sys_file = (
@@ -278,12 +606,34 @@ def generate_algorithm(
                 liggghts_command
             )
 
-            print("      -> SYS written")
+            print(
+                "      -> SYS written"
+            )
+
+        # -----------------------------------------------------
+        # Analyze agglomerate
+        # -----------------------------------------------------
+
+        if analysis_enabled:
+            run_analysis(
+                csv_file,
+                analysis_csv,
+                algorithm_name,
+                combination
+            )
+
+            print(
+                "      -> Analysis written"
+            )
 
         generated += 1
 
     return generated
 
+
+# =============================================================
+# Main
+# =============================================================
 
 def main():
     parser = argparse.ArgumentParser()
@@ -302,38 +652,56 @@ def main():
 
     if not config_file.exists():
         raise FileNotFoundError(
-            f"Config file does not exist: {config_file}"
+            f"Config file does not exist: "
+            f"{config_file}"
         )
 
     with open(
         config_file,
         "r"
     ) as f:
-        config = json.load(f)
+        config = json.load(
+            f
+        )
+
+    # ---------------------------------------------------------
+    # Output configuration
+    # ---------------------------------------------------------
 
     output_directory = config.get(
         "output_directory",
         "generated"
     )
 
-    output_root = Path(output_directory)
+    output_root = Path(
+        output_directory
+    )
 
     if not output_root.is_absolute():
-        output_root = BASE_DIR / output_root
+        output_root = (
+            BASE_DIR
+            / output_root
+        )
 
     output_root.mkdir(
         parents=True,
         exist_ok=True
     )
 
+    # ---------------------------------------------------------
+    # LIGGGHTS configuration
+    # ---------------------------------------------------------
+
     liggghts_config = config.get(
         "liggghts",
         {}
     )
 
-    liggghts_enabled = liggghts_config.get(
-        "enabled",
-        True
+    liggghts_enabled = (
+        liggghts_config.get(
+            "enabled",
+            True
+        )
     )
 
     density = liggghts_config.get(
@@ -341,45 +709,146 @@ def main():
         2.0
     )
 
+    # ---------------------------------------------------------
+    # Analysis configuration
+    # ---------------------------------------------------------
+
+    analysis_config = config.get(
+        "analysis",
+        {}
+    )
+
+    analysis_enabled = (
+        analysis_config.get(
+            "enabled",
+            False
+        )
+    )
+
+    analysis_output_dir = (
+        output_root
+        / "analysis"
+    )
+
+    analysis_csv = (
+        analysis_output_dir
+        / "analysis.csv"
+    )
+
+    if analysis_enabled:
+        analysis_output_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+    # ---------------------------------------------------------
+    # Algorithms
+    # ---------------------------------------------------------
+
     algorithms = config.get(
         "algorithms",
         {}
     )
 
     try:
-        display_output = output_root.relative_to(
-            BASE_DIR
+        display_output = (
+            output_root.relative_to(
+                BASE_DIR
+            )
         )
+
     except ValueError:
-        display_output = output_root
+        display_output = (
+            output_root
+        )
+
+    # ---------------------------------------------------------
+    # Header
+    # ---------------------------------------------------------
 
     print()
     print("=" * 70)
-    print("AUTOMATED AGGLOMERATE GENERATION")
+    print(
+        "AUTOMATED AGGLOMERATE GENERATION"
+    )
     print("=" * 70)
-    print(f"Config    : {config_file.name}")
-    print(f"Output    : {display_output}")
-    print(f"LIGGGHTS  : {liggghts_enabled}")
-    print(f"Density   : {density}")
+    print(
+        f"Config    : {config_file.name}"
+    )
+    print(
+        f"Output    : {display_output}"
+    )
+    print(
+        f"LIGGGHTS  : {liggghts_enabled}"
+    )
+    print(
+        f"Density   : {density}"
+    )
+    print(
+        f"Analysis  : {analysis_enabled}"
+    )
+
+    if analysis_enabled:
+        try:
+            display_analysis = (
+                analysis_csv.relative_to(
+                    BASE_DIR
+                )
+            )
+        except ValueError:
+            display_analysis = (
+                analysis_csv
+            )
+
+        print(
+            f"Analysis CSV: {display_analysis}"
+        )
+
     print("=" * 70)
+
+    # ---------------------------------------------------------
+    # Run algorithms
+    # ---------------------------------------------------------
 
     total_generated = 0
 
-    for algorithm_name, algorithm_config in algorithms.items():
-        total_generated += generate_algorithm(
-            algorithm_name,
-            algorithm_config,
-            output_root,
-            liggghts_enabled,
-            density
+    for (
+        algorithm_name,
+        algorithm_config
+    ) in algorithms.items():
+
+        total_generated += (
+            generate_algorithm(
+                algorithm_name,
+                algorithm_config,
+                output_root,
+                liggghts_enabled,
+                density,
+                analysis_enabled,
+                analysis_csv
+            )
         )
+
+    # ---------------------------------------------------------
+    # Finished
+    # ---------------------------------------------------------
 
     print()
     print("=" * 70)
     print("DONE")
     print("=" * 70)
-    print(f"Generated : {total_generated}")
-    print(f"Output    : {display_output}")
+    print(
+        f"Generated : {total_generated}"
+    )
+    print(
+        f"Output    : {display_output}"
+    )
+
+    if analysis_enabled:
+        print(
+            f"Analysis  : {display_analysis}"
+        )
+
     print("=" * 70)
 
 

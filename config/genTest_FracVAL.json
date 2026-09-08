@@ -4,6 +4,9 @@
         "enabled": true,
         "density": 2.0
     },
+    "analysis": {
+        "enabled": true
+    },
     "algorithms": {
         "FracVAL": {
             "enabled": true,
@@ -14,10 +17,11 @@
                     50
                 ],
                 "Df": [
-                    1.8,
-                    2.4
+                    2.4,
+                    2.7,
+                    3.0
                 ],
-                "kf": 1.1,
+                "kf": 0.8,
                 "Dp_geo": 0.97,
                 "Dp_gsd": 1.0,
                 "tol_ov": 1e-06,

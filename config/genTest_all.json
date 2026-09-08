@@ -1,0 +1,95 @@
+{
+    "output_directory": "generated/test_all_algorithms",
+
+    "liggghts": {
+        "enabled": true,
+        "density": 2.0
+    },
+
+    "analysis": {
+        "enabled": true
+    },
+
+    "algorithms": {
+
+        "FracVAL": {
+            "enabled": true,
+            "script": "FracVAL.py",
+
+            "parameters": {
+                "Np": [
+                    10,
+                    50,
+                    100
+                ],
+
+                "Df": 2.4,
+
+                "kf": 0.8,
+
+                "Dp_geo": 0.97,
+
+                "Dp_gsd": 1.0,
+
+                "tol_ov": 1e-06,
+
+                "random_seed": [
+                    420,
+                    69
+                ]
+            }
+        },
+
+        "Skorupski": {
+            "enabled": true,
+            "script": "skorupski.py",
+
+            "parameters": {
+                "N_target": [
+                    10,
+                    50,
+                    100
+                ],
+
+                "Df": 1.5,
+
+                "kf": 1.1,
+
+                "particle_radius": 0.485,
+
+                "random_seed": [
+                    420,
+                    69
+                ],
+
+                "max_try": 5000,
+
+                "plot-scaling": false
+            }
+        },
+
+        "Urbassek": {
+            "enabled": true,
+            "script": "urbassek3d.py",
+
+            "parameters": {
+                "N_target": [
+                    10,
+                    50,
+                    100
+                ],
+
+                "r_sigma_mult": 6.0,
+
+                "particle_radius": 0.485,
+
+                "random_seed": [
+                    420,
+                    690
+                ],
+
+                "max_try": 5000
+            }
+        }
+    }
+}
