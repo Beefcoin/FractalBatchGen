@@ -1,0 +1,18 @@
+services:
+
+  agglomerate-generation:
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: agglomerate-generation:latest
+
+    working_dir: /app
+
+    volumes:
+      - ./generated:/app/generated
+      - ./config:/app/config
+
+    stdin_open: true
+    tty: true

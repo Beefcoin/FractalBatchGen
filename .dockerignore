@@ -1,0 +1,15 @@
+.git
+.gitignore
+
+__pycache__
+*.pyc
+*.pyo
+
+*.so
+
+generated/
+
+.vscode/
+.idea/
+
+.DS_Store

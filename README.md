@@ -293,6 +293,118 @@ is automatically passed to `liggghtsWriter.py`, producing a matching
 Generated files are written to the `output_directory` specified in the
 JSON configuration.
 
+## Docker
+
+A Docker setup is provided to create a reproducible environment for
+agglomerate generation and analysis. Using Docker avoids differences in
+local Python environments, package versions, and build configurations
+between different systems.
+
+The Docker image contains the complete Python environment required by the
+project. The exact Conda packages used inside the container are defined in
+`conda-linux-64.lock`.
+
+### Building the Docker Image
+
+Docker and Docker Compose are required to use the containerized environment.
+
+Build the image from the project root:
+
+```bash
+docker compose build
+```
+
+During the build process, Docker automatically:
+
+1. creates the defined Conda environment,
+2. installs the required Python packages,
+3. installs the required system build tools and GNU Fortran compiler,
+4. copies the project into the container, and
+5. compiles the FracVAL Fortran implementation as a Python extension using
+   NumPy F2PY.
+
+The FracVAL extension therefore does not have to be compiled manually when
+using Docker. It is built inside the container using the environment and
+compiler provided by the Docker image.
+
+### Running Agglomerate Generation
+
+Generation configurations can be executed directly inside the container.
+
+For example, the included test configuration containing all available
+generation algorithms can be started with:
+
+```bash
+docker compose run --rm agglomerate-generation \
+    ./generate.sh config/genTest_all.json
+```
+
+This executes the complete generation workflow for FracVAL, Skorupski, and
+Urbassek inside the Docker environment.
+
+If enabled in the configuration, LIGGGHTS `.sys` files and morphological
+analysis results are generated automatically as part of the same workflow.
+
+Generated files are written to the local `generated/` directory through the
+Docker volume mount. For the example above, the resulting directory structure
+is:
+
+```text
+generated/test_all_algorithms/
+├── FracVAL/
+│   ├── *.csv
+│   └── sys/
+│       └── *.sys
+├── Skorupski/
+│   ├── *.csv
+│   └── sys/
+│       └── *.sys
+├── Urbassek/
+│   ├── *.csv
+│   └── sys/
+│       └── *.sys
+└── analysis/
+    └── analysis.csv
+```
+
+Any other configuration file located in `config/` can be executed in the
+same way:
+
+```bash
+docker compose run --rm agglomerate-generation \
+    ./generate.sh config/<configuration>.json
+```
+
+### Reproducibility
+
+The Docker environment is intended to minimize differences between systems
+by using the same Python environment, package versions, build environment,
+and FracVAL compilation procedure.
+
+The exact Conda package versions used by the container are stored in:
+
+```text
+conda-linux-64.lock
+```
+
+The human-readable development environment remains defined in:
+
+```text
+environment.yml
+```
+
+When the Docker environment is used, the FracVAL Python extension is compiled
+during image creation and should not be copied from a locally compiled version.
+Local `.so` files are therefore excluded from the Docker build context through
+`.dockerignore`.
+
+To completely rebuild the environment without using cached Docker build
+layers, use:
+
+```bash
+docker compose build --no-cache
+```
+
 ## Configuration
 
 Generation parameters, parameter sweeps, random seeds, output

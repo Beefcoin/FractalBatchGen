@@ -1,11 +1,16 @@
 name: agglomerate-generation
+
 channels:
-  - defaults
+  - conda-forge
+
 dependencies:
   - python=3.12
   - numpy
+  - scipy
   - matplotlib
-  - meson
   - pyvista
+  - vtk
+  - netcdf4
+  - libnetcdf
+  - meson
   - ninja
-
