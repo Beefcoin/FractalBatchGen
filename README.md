@@ -266,34 +266,7 @@ parameters, and original input filename.
 > [!NOTE]  
 > The convex hull volume, porosity, and packing fraction modules currently use the same convex-hull implementation. However, the convex hull is calculated separately by each module, which may become computationally expensive for large agglomerates. This could be optimized in the future by reusing an already calculated convex-hull volume between analysis modules instead of recalculating it.
 
-## Running
-
-Make the launcher executable once:
-
-``` bash
-chmod +x generate.sh
-```
-
-Run one of the included test configurations:
-
-``` bash
-./generate.sh config/genTest_skorupski.json
-./generate.sh config/genTest_urbassek.json
-./generate.sh config/genTest_FracVAL.json
-```
-
-The batch runner reads the selected JSON configuration and generates the
-Cartesian product of all list-valued parameters. Scalar parameters
-remain constant for all corresponding runs.
-
-If LIGGGHTS export is enabled in the configuration, every generated CSV
-is automatically passed to `liggghtsWriter.py`, producing a matching
-`.sys` file with the configured particle density.
-
-Generated files are written to the `output_directory` specified in the
-JSON configuration.
-
-## Docker
+## Run using Docker
 
 A Docker setup is provided to create a reproducible environment for
 agglomerate generation and analysis. Using Docker avoids differences in
