@@ -27,11 +27,11 @@
 
                 "kf": 0.8,
 
-                "Dp_geo": 0.97,
+                "particle_radius": 0.485,
 
-                "Dp_gsd": 1.0,
+                "particle_radius_gsd": 1.0,
 
-                "tol_ov": 1e-06,
+                "tol_ov": 0.0,
 
                 "random_seed": [
                     420,

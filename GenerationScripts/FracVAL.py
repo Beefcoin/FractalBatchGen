@@ -24,8 +24,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--Np", type=int, required=True)
 parser.add_argument("--Df", type=float, required=True)
 parser.add_argument("--kf", type=float, required=True)
-parser.add_argument("--Dp_geo", type=float, required=True)
-parser.add_argument("--Dp_gsd", type=float, required=True)
+
+parser.add_argument("--particle_radius", type=float, required=True)
+parser.add_argument("--particle_radius_gsd", type=float, required=True)
+
+
 parser.add_argument("--tol_ov", type=float, required=True)
 parser.add_argument("--output", type=str, required=True)
 parser.add_argument("--random_seed", type=int, required=True)
@@ -35,8 +38,8 @@ args = parser.parse_args()
 Np = args.Np #number of particles   
 Df = args.Df #fractal Dimension
 kf = args.kf #fractal Prefactor
-Dp_geo = args.Dp_geo #particle Diameter
-Dp_gsd = args.Dp_gsd #standard dev. for particle Diameter (1 -> monodisperse)    
+particle_radius = args.particle_radius #particle Diameter
+particle_radius_gsd = args.particle_radius_gsd #standard dev. for particle Diameter (1 -> monodisperse)    
 tol_ov = args.tol_ov #overlapping tolerance (1e-06 is default for FracVAL)
 random_seed = args.random_seed
 output_file = args.output
@@ -47,14 +50,14 @@ print("available names:", dir(fracval))
 
 def debug_config():
     print("\n=== FracVAL Configuration ===")
-    print(f"Np              : {Np}")
-    print(f"Df              : {Df}")
-    print(f"kf              : {kf}")
-    print(f"Dp_geo          : {Dp_geo}")
-    print(f"Dp_gsd          : {Dp_gsd}")
-    print(f"tol_ov          : {tol_ov}")
-    print(f"output          : {output_file}")
-    print(f"seed            : {random_seed}")
+    print(f"Np                     : {Np}")
+    print(f"Df                     : {Df}")
+    print(f"kf                     : {kf}")
+    print(f"particle_radius        : {particle_radius}")
+    print(f"particle_radius_gsd    : {particle_radius_gsd}")
+    print(f"tol_ov                 : {tol_ov}")
+    print(f"output                 : {output_file}")
+    print(f"seed                   : {random_seed}")
     print("=============================")
 
 
@@ -63,12 +66,12 @@ debug_config()
 
 #call my epic wrapper here
 print("\nGenerating CCA Aggregate using Fortran FracVAL, depending on N this might take a while...\n")
-coords, diam, failed = fracval.fracval_wrapper.run_fracval(
+coords, radii, failed = fracval.fracval_wrapper.run_fracval(
     Np,
     Df, 
     kf, 
-    Dp_geo,
-    Dp_gsd, 
+    particle_radius,
+    particle_radius_gsd, 
     tol_ov,
     random_seed
 )
@@ -79,5 +82,4 @@ if failed:
 
 #save CSV
 fileNameCSV = output_file
-radii = diam / 2
 writeCSV(coords,radii,fileNameCSV)    
